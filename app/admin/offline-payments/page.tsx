@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Edit2, Trash2, Plus } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Edit2, Trash2, Plus, CreditCard } from "lucide-react"
 import {
   getAllEnrollments,
   getAllPayments,
@@ -30,6 +31,13 @@ export default function OfflinePaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<any>(null)
   const [editData, setEditData] = useState<any>({})
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("view")
+  const [selectedEnrollment, setSelectedEnrollment] = useState<any>(null)
+  const [paymentData, setPaymentData] = useState({
+    amount: 0,
+    paymentDate: new Date().toISOString().split("T")[0],
+    notes: "",
+  })
 
   // Get unique enrolled students
   const enrolledStudents = useMemo(() => {
@@ -120,13 +128,59 @@ export default function OfflinePaymentsPage() {
     }
   }
 
+  const handleAddPayment = () => {
+    if (!selectedEnrollment) {
+      alert("Please select an enrollment first")
+      return
+    }
+
+    if (!paymentData.amount || paymentData.amount <= 0) {
+      alert("Please enter a valid amount")
+      return
+    }
+
+    addPayment({
+      studentId: selectedEnrollment.studentId,
+      studentName: selectedEnrollment.studentName,
+      enrollmentId: selectedEnrollment.id,
+      courseId: selectedEnrollment.courseId,
+      courseName: selectedEnrollment.courseName,
+      courseFees: selectedEnrollment.courseFees,
+      amount: paymentData.amount,
+      installmentNo: 1,
+      paymentDate: paymentData.paymentDate,
+      paymentMethod: "offline",
+      status: "completed",
+      notes: paymentData.notes,
+      createdBy: "admin",
+    })
+
+    alert(`Payment of $${paymentData.amount} recorded for ${selectedEnrollment.studentName}`)
+    setPaymentData({ amount: 0, paymentDate: new Date().toISOString().split("T")[0], notes: "" })
+    setSelectedEnrollment(null)
+    setPayments(getAllPayments())
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Offline Payments Management</h1>
-        <p className="text-muted-foreground mt-2">Select a student to manage their payment information</p>
+        <p className="text-muted-foreground mt-2">Manage student payments and record offline transactions</p>
       </div>
 
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="view" className="gap-2">
+            View Payments
+          </TabsTrigger>
+          <TabsTrigger value="manage" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Manage Payments
+          </TabsTrigger>
+        </TabsList>
+
+        {/* View Payments Tab */}
+        <TabsContent value="view" className="space-y-6">
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -455,6 +509,84 @@ export default function OfflinePaymentsPage() {
           </DialogContent>
         </Dialog>
       )}
+        </TabsContent>
+
+        {/* Manage Payments Tab */}
+        <TabsContent value="manage" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Record Offline Payment</CardTitle>
+              <CardDescription>Add offline payment entry for enrolled students</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="enrollment">Select Enrollment</Label>
+                <Select value={selectedEnrollment?.id || ""} onValueChange={(value) => {
+                  const enrollment = enrollments.find((e: any) => e.id === value)
+                  setSelectedEnrollment(enrollment)
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an enrollment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enrollments.map((enrollment: any) => (
+                      <SelectItem key={enrollment.id} value={enrollment.id}>
+                        {enrollment.studentName} - {enrollment.courseName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedEnrollment && (
+                <>
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <p><strong>Student:</strong> {selectedEnrollment.studentName}</p>
+                    <p><strong>Course:</strong> {selectedEnrollment.courseName}</p>
+                    <p><strong>Total Fees:</strong> ${selectedEnrollment.courseFees}</p>
+                    <p><strong>Installments:</strong> {selectedEnrollment.selectedInstallments}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Payment Amount *</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="Enter payment amount"
+                      value={paymentData.amount}
+                      onChange={(e) => setPaymentData({ ...paymentData, amount: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentDate">Payment Date *</Label>
+                    <Input
+                      id="paymentDate"
+                      type="date"
+                      value={paymentData.paymentDate}
+                      onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentNotes">Notes</Label>
+                    <Input
+                      id="paymentNotes"
+                      placeholder="Add payment notes"
+                      value={paymentData.notes}
+                      onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
+                    />
+                  </div>
+
+                  <Button onClick={handleAddPayment} className="w-full">
+                    Record Offline Payment
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
