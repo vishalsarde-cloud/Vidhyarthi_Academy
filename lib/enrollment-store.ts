@@ -21,6 +21,7 @@ export interface EnrolledStudent {
 
 export interface OfflinePayment {
   id: string
+  receiptId: string
   studentId: string
   studentName: string
   enrollmentId: string
@@ -103,9 +104,14 @@ export function getUniqueEnrolledStudents() {
 }
 
 // Payment functions
-export function addPayment(payment: Omit<OfflinePayment, 'id' | 'createdAt' | 'updatedAt'>) {
+export function addPayment(payment: Omit<OfflinePayment, 'id' | 'receiptId' | 'createdAt' | 'updatedAt'>) {
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase()
+  const receiptId = `RCP-${timestamp}-${random}`
+  
   const newPayment: OfflinePayment = {
-    id: `PAY-${Date.now()}`,
+    id: `PAY-${timestamp}`,
+    receiptId,
     ...payment,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

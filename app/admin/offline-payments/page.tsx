@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Edit2, Trash2, Plus, CreditCard } from "lucide-react"
+import { Edit2, Trash2, Plus, CreditCard, Download, Printer } from "lucide-react"
 import {
   getAllEnrollments,
   getAllPayments,
@@ -20,6 +20,7 @@ import {
   deletePayment,
   getPaymentSummaryForEnrollment,
 } from "@/lib/enrollment-store"
+import { printPaymentReceipt, generateDownloadReceipt } from "@/lib/offline-receipt-generator"
 
 export default function OfflinePaymentsPage() {
   const [payments, setPayments] = useState<any[]>([])
@@ -367,6 +368,50 @@ export default function OfflinePaymentsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => printPaymentReceipt({
+                                  studentId: payment.studentId,
+                                  studentName: payment.studentName,
+                                  courseId: payment.courseId,
+                                  courseName: payment.courseName,
+                                  courseFees: payment.courseFees,
+                                  paymentAmount: payment.amount,
+                                  paymentDate: payment.paymentDate,
+                                  paymentMethod: payment.paymentMethod,
+                                  paymentStatus: payment.status,
+                                  notes: payment.notes,
+                                  receiptId: payment.receiptId,
+                                  createdAt: payment.createdAt,
+                                })}
+                                className="gap-1"
+                                title="Print Receipt"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => generateDownloadReceipt({
+                                  studentId: payment.studentId,
+                                  studentName: payment.studentName,
+                                  courseId: payment.courseId,
+                                  courseName: payment.courseName,
+                                  courseFees: payment.courseFees,
+                                  paymentAmount: payment.amount,
+                                  paymentDate: payment.paymentDate,
+                                  paymentMethod: payment.paymentMethod,
+                                  paymentStatus: payment.status,
+                                  notes: payment.notes,
+                                  receiptId: payment.receiptId,
+                                  createdAt: payment.createdAt,
+                                })}
+                                className="gap-1"
+                                title="Download Receipt"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
