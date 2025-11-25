@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { Button } from "@/components/ui/button"
@@ -11,11 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { courses, getEnrollmentsSnapshot } from "@/lib/data"
+import { courses } from "@/lib/data"
 import { CheckCircle2, AlertCircle, Users, CreditCard, Trash2 } from "lucide-react"
-
-// In-memory storage for admin enrollments
-let adminEnrollments: any[] = []
+import {
+  getAllEnrollments,
+  addEnrollment,
+  deleteEnrollment,
+  addPayment,
+} from "@/lib/enrollment-store"
 
 const validationSchema = Yup.object({
   studentName: Yup.string().required("Student name is required"),
@@ -29,12 +32,18 @@ export default function AdminEnrollStudentPage() {
   const [activeTab, setActiveTab] = useState("enroll")
   const [enrollmentSuccess, setEnrollmentSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [enrollments, setEnrollments] = useState<any[]>([])
   const [paymentData, setPaymentData] = useState({
     amount: 0,
     paymentDate: new Date().toISOString().split("T")[0],
     notes: "",
   })
   const [selectedEnrollment, setSelectedEnrollment] = useState<any>(null)
+
+  // Load enrollments on mount
+  useEffect(() => {
+    setEnrollments(getAllEnrollments())
+  }, [])
 
   const formik = useFormik({
     initialValues: {
@@ -66,9 +75,8 @@ export default function AdminEnrollStudentPage() {
         status: "pending",
       }))
 
-      // Create enrollment
-      const enrollment = {
-        id: `ADMIN-ENR-${Date.now()}`,
+      // Create enrollment using global store
+      const enrollment = addEnrollment({
         studentId: `STU-${Date.now()}`,
         studentName: values.studentName,
         studentEmail: values.studentEmail,
@@ -82,15 +90,15 @@ export default function AdminEnrollStudentPage() {
         enrollmentDate: new Date().toISOString().split("T")[0],
         notes: values.notes,
         createdBy: "admin",
-        createdAt: new Date().toISOString(),
-      }
+      })
 
-      adminEnrollments.push(enrollment)
       setSuccessMessage(`Student ${values.studentName} enrolled successfully in ${selectedCourse.title}`)
       setEnrollmentSuccess(true)
       formik.resetForm()
 
+      // Refresh enrollments list
       setTimeout(() => {
+        setEnrollments(getAllEnrollments())
         setEnrollmentSuccess(false)
       }, 2000)
     },
@@ -107,13 +115,30 @@ export default function AdminEnrollStudentPage() {
       return
     }
 
+    addPayment({
+      studentId: selectedEnrollment.studentId,
+      studentName: selectedEnrollment.studentName,
+      enrollmentId: selectedEnrollment.id,
+      courseId: selectedEnrollment.courseId,
+      courseName: selectedEnrollment.courseName,
+      courseFees: selectedEnrollment.courseFees,
+      amount: paymentData.amount,
+      installmentNo: 1,
+      paymentDate: paymentData.paymentDate,
+      paymentMethod: "offline",
+      status: "completed",
+      notes: paymentData.notes,
+      createdBy: "admin",
+    })
+
     alert(`Payment of $${paymentData.amount} recorded for ${selectedEnrollment.studentName}`)
     setPaymentData({ amount: 0, paymentDate: new Date().toISOString().split("T")[0], notes: "" })
     setSelectedEnrollment(null)
   }
 
   const handleDeleteEnrollment = (enrollmentId: string) => {
-    adminEnrollments = adminEnrollments.filter(e => e.id !== enrollmentId)
+    deleteEnrollment(enrollmentId)
+    setEnrollments(getAllEnrollments())
     if (selectedEnrollment?.id === enrollmentId) {
       setSelectedEnrollment(null)
     }
@@ -252,11 +277,11 @@ export default function AdminEnrollStudentPage() {
           </Card>
 
           {/* Recent Enrollments */}
-          {adminEnrollments.length > 0 && (
+          {enrollments.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Recent Enrollments</CardTitle>
-                <CardDescription>Last {Math.min(5, adminEnrollments.length)} enrollments</CardDescription>
+                <CardDescription>Last {Math.min(5, enrollments.length)} enrollments</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -272,7 +297,7 @@ export default function AdminEnrollStudentPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {adminEnrollments.slice(-5).reverse().map(enrollment => (
+                      {enrollments.slice(-5).reverse().map(enrollment => (
                         <TableRow key={enrollment.id}>
                           <TableCell className="font-medium">{enrollment.studentName}</TableCell>
                           <TableCell>{enrollment.courseName}</TableCell>
@@ -314,14 +339,14 @@ export default function AdminEnrollStudentPage() {
               <div className="space-y-2">
                 <Label htmlFor="enrollment">Select Enrollment</Label>
                 <Select value={selectedEnrollment?.id || ""} onValueChange={(value) => {
-                  const enrollment = adminEnrollments.find(e => e.id === value)
+                  const enrollment = enrollments.find((e: any) => e.id === value)
                   setSelectedEnrollment(enrollment)
                 }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select an enrollment" />
                   </SelectTrigger>
                   <SelectContent>
-                    {adminEnrollments.map(enrollment => (
+                    {enrollments.map((enrollment: any) => (
                       <SelectItem key={enrollment.id} value={enrollment.id}>
                         {enrollment.studentName} - {enrollment.courseName}
                       </SelectItem>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,15 +9,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Edit2, Trash2, Download } from "lucide-react"
-
-// In-memory storage for offline payments
-let offlinePayments: any[] = []
-let adminEnrollments: any[] = []
+import { Edit2, Trash2, Plus } from "lucide-react"
+import {
+  getAllEnrollments,
+  getAllPayments,
+  getUniqueEnrolledStudents,
+  addPayment,
+  updatePayment,
+  deletePayment,
+  getPaymentSummaryForEnrollment,
+} from "@/lib/enrollment-store"
 
 export default function OfflinePaymentsPage() {
-  const [payments, setPayments] = useState(offlinePayments)
-  const [enrollments, setEnrollments] = useState(adminEnrollments)
+  const [payments, setPayments] = useState<any[]>([])
+  const [enrollments, setEnrollments] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
@@ -28,20 +33,7 @@ export default function OfflinePaymentsPage() {
 
   // Get unique enrolled students
   const enrolledStudents = useMemo(() => {
-    const uniqueStudents = new Map()
-    enrollments.forEach(enrollment => {
-      if (!uniqueStudents.has(enrollment.studentId)) {
-        uniqueStudents.set(enrollment.studentId, {
-          studentId: enrollment.studentId,
-          studentName: enrollment.studentName,
-          studentEmail: enrollment.studentEmail,
-          studentPhone: enrollment.studentPhone,
-          enrollments: [],
-        })
-      }
-      uniqueStudents.get(enrollment.studentId).enrollments.push(enrollment)
-    })
-    return Array.from(uniqueStudents.values())
+    return getUniqueEnrolledStudents()
   }, [enrollments])
 
   // Filter students by search
@@ -86,28 +78,27 @@ export default function OfflinePaymentsPage() {
   }
 
   const handleSaveEdit = () => {
-    const index = payments.findIndex(p => p.id === selectedPayment.id)
-    if (index !== -1) {
-      payments[index] = { ...editData, updatedAt: new Date().toISOString() }
-      setPayments([...payments])
-      setIsEditDialogOpen(false)
-      setSelectedPayment(null)
-    }
+    updatePayment(selectedPayment.id, editData)
+    setPayments(getAllPayments())
+    setIsEditDialogOpen(false)
+    setSelectedPayment(null)
   }
 
+  // Load data on mount
+  useEffect(() => {
+    setEnrollments(getAllEnrollments())
+    setPayments(getAllPayments())
+  }, [])
+
   const handleDeletePayment = (paymentId: string) => {
-    offlinePayments = payments.filter(p => p.id !== paymentId)
-    setPayments(offlinePayments)
+    deletePayment(paymentId)
+    setPayments(getAllPayments())
     setDeleteConfirm(null)
   }
 
   const handleStatusChange = (paymentId: string, newStatus: string) => {
-    const index = payments.findIndex(p => p.id === paymentId)
-    if (index !== -1) {
-      payments[index].status = newStatus
-      payments[index].updatedAt = new Date().toISOString()
-      setPayments([...payments])
-    }
+    updatePayment(paymentId, { status: newStatus })
+    setPayments(getAllPayments())
   }
 
   const handleFieldChange = (field: string, value: any) => {
