@@ -27,28 +27,55 @@ export default function OfflinePaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedPayment, setSelectedPayment] = useState(null)
+  const [selectedStudent, setSelectedStudent] = useState(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editData, setEditData] = useState({})
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [viewMode, setViewMode] = useState("students") // "students" or "payments"
+
+  // Get unique enrolled students
+  const enrolledStudents = useMemo(() => {
+    const uniqueStudents = new Map()
+    enrollments.forEach(enrollment => {
+      if (!uniqueStudents.has(enrollment.studentId)) {
+        uniqueStudents.set(enrollment.studentId, {
+          studentId: enrollment.studentId,
+          studentName: enrollment.studentName,
+          studentEmail: enrollment.studentEmail,
+          studentPhone: enrollment.studentPhone,
+          enrollments: [],
+        })
+      }
+      uniqueStudents.get(enrollment.studentId).enrollments.push(enrollment)
+    })
+    return Array.from(uniqueStudents.values())
+  }, [enrollments])
+
+  // Filter students by search
+  const filteredStudents = useMemo(() => {
+    return enrolledStudents.filter(student =>
+      student.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.studentEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.studentId.includes(searchQuery)
+    )
+  }, [enrolledStudents, searchQuery])
+
+  // Get payments for selected student
+  const studentPayments = useMemo(() => {
+    if (!selectedStudent) return []
+    return payments.filter(p => p.studentId === selectedStudent.studentId)
+  }, [selectedStudent, payments])
 
   // Filter and search payments
   const filteredPayments = useMemo(() => {
-    let result = payments
+    let result = studentPayments
 
     if (statusFilter !== "all") {
       result = result.filter(p => p.status === statusFilter)
     }
 
-    if (searchQuery) {
-      result = result.filter(p =>
-        p.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.studentId.includes(searchQuery)
-      )
-    }
-
     return result
-  }, [payments, statusFilter, searchQuery])
+  }, [studentPayments, statusFilter])
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -114,7 +141,7 @@ export default function OfflinePaymentsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Offline Payments Management</h1>
-        <p className="text-muted-foreground mt-2">Manage and track all offline payment entries</p>
+        <p className="text-muted-foreground mt-2">Select a student to manage their payment information</p>
       </div>
 
       {/* Statistics Cards */}
@@ -153,50 +180,111 @@ export default function OfflinePaymentsPage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search by student name, course, or ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Filter by Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="refunded">Refunded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button variant="outline" className="w-full gap-2">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="search">Search Students</Label>
+            <Input
+              id="search"
+              placeholder="Search by student name, email, or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Payments Table */}
+      {/* Students List */}
       <Card>
         <CardHeader>
-          <CardTitle>Payment Records</CardTitle>
-          <CardDescription>Showing {filteredPayments.length} of {payments.length} payments</CardDescription>
+          <CardTitle>Enrolled Students</CardTitle>
+          <CardDescription>Click on a student to view and manage their payments</CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map(student => (
+                <div
+                  key={student.studentId}
+                  onClick={() => setSelectedStudent(student)}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedStudent?.studentId === student.studentId
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <p className="font-semibold text-foreground">{student.studentName}</p>
+                  <p className="text-sm text-muted-foreground">{student.studentEmail}</p>
+                  <p className="text-sm text-muted-foreground">{student.studentPhone}</p>
+                  <p className="text-xs text-primary mt-2">{student.enrollments.length} enrollment(s)</p>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No students found
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payment Records for Selected Student */}
+      {selectedStudent && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Student Name</p>
+                  <p className="font-semibold">{selectedStudent.studentName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-semibold">{selectedStudent.studentEmail}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-semibold">{selectedStudent.studentPhone}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Student ID</p>
+                  <p className="font-semibold">{selectedStudent.studentId}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Status Filter for Selected Student */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <Label htmlFor="status">Filter by Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payments Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Records</CardTitle>
+              <CardDescription>Showing {filteredPayments.length} of {studentPayments.length} payments for {selectedStudent.studentName}</CardDescription>
+            </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
@@ -276,6 +364,8 @@ export default function OfflinePaymentsPage() {
           </div>
         </CardContent>
       </Card>
+        </>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
