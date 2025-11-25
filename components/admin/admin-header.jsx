@@ -60,7 +60,7 @@ export function AdminHeader() {
           <DropdownMenuContent align="end" className="w-56">
             <div className="px-2 py-1.5">
               <p className="text-sm font-medium">{user?.name || "Admin User"}</p>
-              <p className="text-xs text-muted-foreground">{user?.email || "admin@gmail.com"}</p>
+              <p className="text-xs text-muted-foreground">{user?.email || "admin@windsurf.com"}</p>
               <p className="text-xs text-primary capitalize mt-1">Administrator</p>
             </div>
             <DropdownMenuSeparator />

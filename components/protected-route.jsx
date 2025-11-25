@@ -5,16 +5,6 @@ import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Loader2 } from "lucide-react"
 
-/**
- * @typedef {Object} ProtectedRouteProps
- * @property {React.ReactNode} children
- * @property {string} [requiredRole] - "admin" or "student"
- */
-
-/**
- * Protected route component that requires authentication
- * @param {ProtectedRouteProps} props
- */
 export function ProtectedRoute({ children, requiredRole }) {
   const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()

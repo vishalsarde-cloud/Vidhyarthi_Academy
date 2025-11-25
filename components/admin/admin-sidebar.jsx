@@ -15,7 +15,7 @@ import {
   UserCheck,
 } from "lucide-react"
 
-const APP_NAME = "Vidhyarthi Academy"
+const APP_NAME = "Vidyarthi Academy"
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -23,7 +23,6 @@ const navItems = [
   { href: "/admin/students", label: "Students", icon: UserCheck },
   { href: "/admin/enrollments", label: "Enrollments", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
-  { href: "/admin/pending-payments", label: "Pending Payments", icon: CreditCard },
   { href: "/admin/reports", label: "Reports", icon: FileText },
   { href: "/admin/audit", label: "Audit Logs", icon: Activity },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
@@ -39,6 +38,7 @@ export function AdminSidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
           <GraduationCap className="h-4 w-4 text-sidebar-primary-foreground" />
         </div>
+        {/* Updated brand name */}
         <span className="text-lg font-bold">{APP_NAME}</span>
       </div>
       <nav className="space-y-1 p-4">

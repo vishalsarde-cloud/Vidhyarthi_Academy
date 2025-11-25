@@ -11,21 +11,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+
 import { formatCurrency } from "@/lib/data"
 import { CreditCard, Building2, Smartphone, CheckCircle2, Loader2, AlertCircle } from "lucide-react"
 
-/**
- * @typedef {Object} PaymentModalProps
- * @property {boolean} isOpen
- * @property {Function} onClose
- * @property {Object} installment
- * @property {Object} course
- * @property {Function} onPaymentSuccess
- */
+type PaymentMethod = "card" | "netbanking" | "upi"
 
 export function PaymentModal({ isOpen, onClose, installment, course, onPaymentSuccess }) {
-  const [step, setStep] = useState("details")
-  const [paymentId, setPaymentId] = useState("")
+  const [step, setStep] = useState<"details" | "processing" | "success" | "error">("details")
+  const [paymentId, setPaymentId] = useState<string>("")
 
   const amountDue = installment.amount - installment.paidAmount
 
@@ -56,7 +50,7 @@ export function PaymentModal({ isOpen, onClose, installment, course, onPaymentSu
   const formik = useFormik({
     initialValues: {
       amount: amountDue,
-      method: "card",
+      method: "card" as PaymentMethod,
       cardNumber: "",
       cardExpiry: "",
       cardCvv: "",

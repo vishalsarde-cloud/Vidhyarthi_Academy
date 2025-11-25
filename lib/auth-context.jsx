@@ -1,12 +1,22 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+
 import { validateCredentials, registerStudent, updateStudentProfile } from "./auth-data"
 
-const AuthContext = createContext(undefined)
+>
+  logout: () => void
+  register: (data) => Promise<{ success: boolean; error?: string }>
+  updateProfile: (data) => Promise<{ success: boolean; error?: string }>
+  isAuthenticated: boolean
+  isAdmin: boolean
+  isStudent: boolean
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -22,7 +32,7 @@ export function AuthProvider({ children }) {
     setIsLoading(false)
   }, [])
 
-  const login = async (email, password) => {
+  const login = async (email, password)=> {
     setIsLoading(true)
 
     // Simulate API delay
@@ -41,7 +51,7 @@ export function AuthProvider({ children }) {
     return { success: false, error: "Invalid email or password" }
   }
 
-  const register = async (data) => {
+  const register = async (data)=> {
     setIsLoading(true)
 
     // Simulate API delay
@@ -59,7 +69,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const updateProfile = async (data) => {
+  const updateProfile = async (data)=> {
     if (!user) return { success: false, error: "Not authenticated" }
 
     setIsLoading(true)

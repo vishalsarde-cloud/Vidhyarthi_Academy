@@ -3,17 +3,13 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+
 import { formatCurrency, formatDate } from "@/lib/data"
 import { Calendar, Clock, User, CreditCard } from "lucide-react"
 import Link from "next/link"
 
-/**
- * @typedef {Object} CourseCardProps
- * @property {Object} course - Course object
- */
-
 export function CourseCard({ course }) {
-  const categoryColors = {
+  const categoryColors= {
     Development: "bg-primary/10 text-primary",
     "Data Science": "bg-accent/20 text-accent-foreground",
     Design: "bg-chart-3/20 text-chart-3",
