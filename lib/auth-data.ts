@@ -12,29 +12,59 @@ export const demoCredentials = {
   },
 }
 
-export const registeredStudents: Map<string, Student> = new Map([
-  [
-    "student@gmail.com",
-    {
-      id: "student-001",
-      name: "John Doe",
-      email: "student@gmail.com",
-      phone: "+1 234 567 8900",
-      address: "123 Main St, New York, NY 10001",
-      dateOfBirth: "1995-05-15",
-      gender: "male",
-      education: "Bachelor's in Computer Science",
-      occupation: "Software Developer",
-      emergencyContact: "+1 234 567 8901",
-      bio: "Passionate about learning new technologies and building innovative solutions.",
-      skills: ["JavaScript", "React", "Node.js"],
-      linkedIn: "https://linkedin.com/in/johndoe",
-      github: "https://github.com/johndoe",
-      createdAt: "2025-01-01",
-      password: "student123",
-    },
-  ],
-])
+// Load from localStorage or use default
+function loadStudentsFromStorage(): Map<string, Student> {
+  if (typeof window === "undefined") {
+    return new Map()
+  }
+  
+  try {
+    const stored = localStorage.getItem("vidhyarthi_students")
+    if (stored) {
+      const data = JSON.parse(stored)
+      return new Map(data)
+    }
+  } catch (e) {
+    console.error("Failed to load students from storage:", e)
+  }
+  
+  return new Map([
+    [
+      "student@gmail.com",
+      {
+        id: "student-001",
+        name: "John Doe",
+        email: "student@gmail.com",
+        phone: "+91 98765 43210",
+        address: "123 Main St, Mumbai, Maharashtra 400001",
+        dateOfBirth: "1995-05-15",
+        gender: "male",
+        education: "Bachelor's in Computer Science",
+        occupation: "Software Developer",
+        emergencyContact: "+91 98765 43211",
+        bio: "Passionate about learning new technologies and building innovative solutions.",
+        skills: ["JavaScript", "React", "Node.js"],
+        linkedIn: "https://linkedin.com/in/johndoe",
+        github: "https://github.com/johndoe",
+        createdAt: "2025-01-01",
+        password: "student123",
+      },
+    ],
+  ])
+}
+
+export let registeredStudents: Map<string, Student> = loadStudentsFromStorage()
+
+// Save students to localStorage
+function saveStudentsToStorage() {
+  if (typeof window === "undefined") return
+  try {
+    const data = Array.from(registeredStudents.entries())
+    localStorage.setItem("vidhyarthi_students", JSON.stringify(data))
+  } catch (e) {
+    console.error("Failed to save students to storage:", e)
+  }
+}
 
 // Demo users
 export const demoUsers: Record<string, User> = {
@@ -88,6 +118,7 @@ export function registerStudent(data: Omit<Student, "id" | "createdAt">): User {
   }
 
   registeredStudents.set(data.email, newStudent)
+  saveStudentsToStorage()
 
   return {
     id: newStudent.id,
@@ -113,16 +144,17 @@ export function getStudentByEmail(email: string): Student | undefined {
   return registeredStudents.get(email)
 }
 
-export function getAllStudents(): Student[] {
-  return Array.from(registeredStudents.values())
-}
-
 export function updateStudentProfile(email: string, data: Partial<Student>): User | null {
   const student = registeredStudents.get(email)
   if (!student) return null
 
-  const updatedStudent = { ...student, ...data }
+  const updatedStudent: Student = {
+    ...student,
+    ...data,
+  }
+
   registeredStudents.set(email, updatedStudent)
+  saveStudentsToStorage()
 
   return {
     id: updatedStudent.id,
@@ -143,3 +175,18 @@ export function updateStudentProfile(email: string, data: Partial<Student>): Use
     createdAt: updatedStudent.createdAt,
   }
 }
+
+export function updateStudentPassword(email: string, newPassword: string): boolean {
+  const student = registeredStudents.get(email)
+  if (!student) return false
+
+  student.password = newPassword
+  registeredStudents.set(email, student)
+  saveStudentsToStorage()
+  return true
+}
+
+export function getAllStudents(): Student[] {
+  return Array.from(registeredStudents.values())
+}
+

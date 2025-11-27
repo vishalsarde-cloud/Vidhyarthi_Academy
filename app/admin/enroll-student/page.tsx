@@ -10,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { courses } from "@/lib/data"
+import { courses, formatCurrency } from "@/lib/data"
 import { CheckCircle2, AlertCircle, Users, Trash2 } from "lucide-react"
 import {
   getAllEnrollments,
   addEnrollment,
   deleteEnrollment,
 } from "@/lib/enrollment-store"
+import { getStudentByEmail, updateStudentPassword, registerStudent } from "@/lib/auth-data"
 
 const validationSchema = Yup.object({
   studentName: Yup.string().required("Student name is required"),
@@ -24,6 +25,7 @@ const validationSchema = Yup.object({
   studentPhone: Yup.string().required("Phone number is required"),
   courseId: Yup.string().required("Course is required"),
   selectedInstallments: Yup.number().min(1, "At least 1 installment required").required("Number of installments is required"),
+  studentPassword: Yup.string().min(8, "Password must be at least 8 characters").required("Password is required for student login"),
 })
 
 export default function AdminEnrollStudentPage() {
@@ -43,6 +45,7 @@ export default function AdminEnrollStudentPage() {
       studentPhone: "",
       courseId: "",
       selectedInstallments: 1,
+      studentPassword: "",
       notes: "",
     },
     validationSchema,
@@ -51,6 +54,28 @@ export default function AdminEnrollStudentPage() {
       if (!selectedCourse) {
         alert("Course not found")
         return
+      }
+
+      // Check if student already exists
+      let existingStudent = getStudentByEmail(values.studentEmail)
+      
+      if (existingStudent) {
+        // Update password if student exists
+        updateStudentPassword(values.studentEmail, values.studentPassword)
+      } else {
+        // Create new student account
+        registerStudent({
+          name: values.studentName,
+          email: values.studentEmail,
+          password: values.studentPassword,
+          phone: values.studentPhone,
+          address: "",
+          dateOfBirth: "",
+          gender: "other",
+          education: "",
+          occupation: "",
+          emergencyContact: "",
+        })
       }
 
       // Generate payment schedule
@@ -200,6 +225,20 @@ export default function AdminEnrollStudentPage() {
                         <p className="text-sm text-destructive">{formik.errors.selectedInstallments}</p>
                       )}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="studentPassword">Student Password *</Label>
+                      <Input
+                        id="studentPassword"
+                        type="password"
+                        placeholder="Set password for student login"
+                        {...formik.getFieldProps("studentPassword")}
+                        className={formik.errors.studentPassword && formik.touched.studentPassword ? "border-destructive" : ""}
+                      />
+                      {formik.errors.studentPassword && formik.touched.studentPassword && (
+                        <p className="text-sm text-destructive">{formik.errors.studentPassword}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -244,7 +283,7 @@ export default function AdminEnrollStudentPage() {
                         <TableRow key={enrollment.id}>
                           <TableCell className="font-medium">{enrollment.studentName}</TableCell>
                           <TableCell>{enrollment.courseName}</TableCell>
-                          <TableCell>${enrollment.courseFees}</TableCell>
+                          <TableCell>{formatCurrency(enrollment.courseFees)}</TableCell>
                           <TableCell>{enrollment.selectedInstallments}</TableCell>
                           <TableCell>
                             <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">

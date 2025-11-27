@@ -131,7 +131,7 @@ export default function HomePage() {
               { value: "5,000+", label: "Students Enrolled" },
               { value: "50+", label: "Expert Courses" },
               { value: "98%", label: "Completion Rate" },
-              { value: "$2M+", label: "In Installments Managed" },
+              { value: "₹2Cr+", label: "In Installments Managed" },
             ].map((stat, index) => (
               <div key={index}>
                 <p className="text-4xl font-bold text-sidebar-primary">{stat.value}</p>

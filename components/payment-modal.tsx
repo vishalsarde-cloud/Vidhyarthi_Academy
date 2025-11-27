@@ -30,10 +30,11 @@ export function PaymentModal({ isOpen, onClose, installment, course, onPaymentSu
   const [paymentId, setPaymentId] = useState<string>("")
 
   const amountDue = installment.amount - installment.paidAmount
+  const isLastInstallment = installment.no === course.maxInstallments
 
   const validationSchema = Yup.object({
     amount: Yup.number()
-      .min(1, "Amount must be at least $1")
+      .min(1, "Amount must be at least ₹1")
       .max(amountDue, `Amount cannot exceed ${formatCurrency(amountDue)}`)
       .required("Amount is required"),
     method: Yup.string().oneOf(["card", "netbanking", "upi"]).required("Payment method is required"),
@@ -77,6 +78,15 @@ export function PaymentModal({ isOpen, onClose, installment, course, onPaymentSu
       if (isSuccess) {
         const newPaymentId = `TXN${Date.now().toString().slice(-8)}`
         setPaymentId(newPaymentId)
+        
+        // Store payment method info in session storage for tracking
+        try {
+          const lastPaymentMethod = values.method === "card" ? "online" : values.method === "upi" ? "online" : "online"
+          sessionStorage.setItem("lastPaymentMethod", lastPaymentMethod)
+        } catch (e) {
+          console.error("Failed to store payment method:", e)
+        }
+        
         setStep("success")
         setTimeout(() => {
           onPaymentSuccess(newPaymentId)
@@ -182,19 +192,28 @@ export function PaymentModal({ isOpen, onClose, installment, course, onPaymentSu
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Payment Amount</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="amount">Payment Amount</Label>
+                {isLastInstallment && (
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Last Installment</span>
+                )}
+              </div>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
                 <Input
                   id="amount"
                   type="number"
                   {...formik.getFieldProps("amount")}
-                  className={`pl-7 ${formik.errors.amount && formik.touched.amount ? "border-destructive" : ""}`}
+                  className={`pl-7 ${formik.errors.amount && formik.touched.amount ? "border-destructive" : ""} ${isLastInstallment ? "bg-muted" : ""}`}
                   min={1}
                   max={amountDue}
                   step={0.01}
+                  disabled={isLastInstallment}
                 />
               </div>
+              {isLastInstallment && (
+                <p className="text-xs text-muted-foreground">Last installment amount is auto-calculated and cannot be modified</p>
+              )}
               {formik.errors.amount && formik.touched.amount && (
                 <p className="text-sm text-destructive">{formik.errors.amount}</p>
               )}

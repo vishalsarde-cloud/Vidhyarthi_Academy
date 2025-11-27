@@ -35,14 +35,7 @@ const navItems: NavItem[] = [
     ],
   },
   { href: "/admin/enrollments", label: "Enrollments", icon: Users },
-  {
-    label: "Payments",
-    icon: CreditCard,
-    submenu: [
-      { href: "/admin/payments", label: "View Payments" },
-      { href: "/admin/offline-payments", label: "Offline Payments" },
-    ],
-  },
+  { href: "/admin/offline-payments", label: "Offline Payments", icon: CreditCard },
   { href: "/admin/reports", label: "Reports", icon: FileText },
   { href: "/admin/audit", label: "Audit Logs", icon: Activity },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },

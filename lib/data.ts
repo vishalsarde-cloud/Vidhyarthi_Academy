@@ -6,7 +6,7 @@ export const courses: Course[] = [
     title: "Full-Stack Web Development Bootcamp",
     description:
       "Master modern web development with React, Node.js, and databases. Build real-world projects and deploy to the cloud.",
-    price: 2500,
+    price: 25000,
     startDate: "2025-01-15",
     endDate: "2025-06-15",
     maxInstallments: 5,
@@ -20,7 +20,7 @@ export const courses: Course[] = [
     title: "Data Science & Machine Learning",
     description:
       "Learn Python, statistics, and machine learning algorithms. Work with real datasets and build predictive models.",
-    price: 3000,
+    price: 30000,
     startDate: "2025-02-01",
     endDate: "2025-08-01",
     maxInstallments: 6,
@@ -34,7 +34,7 @@ export const courses: Course[] = [
     title: "UI/UX Design Masterclass",
     description:
       "Design beautiful interfaces and create seamless user experiences. Master Figma, prototyping, and design systems.",
-    price: 1800,
+    price: 18000,
     startDate: "2025-01-20",
     endDate: "2025-04-20",
     maxInstallments: 4,
@@ -48,7 +48,7 @@ export const courses: Course[] = [
     title: "Cloud Architecture & DevOps",
     description:
       "Master AWS, Docker, Kubernetes, and CI/CD pipelines. Learn to build scalable and reliable cloud infrastructure.",
-    price: 2800,
+    price: 28000,
     startDate: "2025-03-01",
     endDate: "2025-07-01",
     maxInstallments: 5,
@@ -62,7 +62,7 @@ export const courses: Course[] = [
     title: "Mobile App Development with React Native",
     description:
       "Build cross-platform mobile apps for iOS and Android. Learn React Native, navigation, and native modules.",
-    price: 2200,
+    price: 22000,
     startDate: "2025-02-15",
     endDate: "2025-06-15",
     maxInstallments: 4,
@@ -75,7 +75,7 @@ export const courses: Course[] = [
     id: "6",
     title: "Cybersecurity Fundamentals",
     description: "Learn ethical hacking, network security, and threat detection. Prepare for security certifications.",
-    price: 2400,
+    price: 24000,
     startDate: "2025-04-01",
     endDate: "2025-08-01",
     maxInstallments: 4,
@@ -109,13 +109,13 @@ let _enrollments: Enrollment[] = [
     id: "1",
     studentId: "student-001",
     courseId: "1",
-    totalAmount: 2500,
+    totalAmount: 25000,
     selectedInstallments: 3,
     status: "active",
     schedule: [
-      { no: 1, amount: 900, dueDate: "2025-01-15", paidAmount: 900, paid: true, status: "paid" },
-      { no: 2, amount: 800, dueDate: "2025-03-15", paidAmount: 0, paid: false, status: "pending" },
-      { no: 3, amount: 800, dueDate: "2025-05-15", paidAmount: 0, paid: false, status: "pending" },
+      { no: 1, amount: 9000, dueDate: "2025-01-15", paidAmount: 9000, paid: true, status: "paid" },
+      { no: 2, amount: 8000, dueDate: "2025-03-15", paidAmount: 0, paid: false, status: "pending" },
+      { no: 3, amount: 8000, dueDate: "2025-05-15", paidAmount: 0, paid: false, status: "pending" },
     ],
     createdAt: "2025-01-10",
   },
@@ -126,9 +126,9 @@ let _payments: Payment[] = [
     id: "1",
     enrollmentId: "1",
     installmentNo: 1,
-    amount: 900,
+    amount: 9000,
     paidAt: "2025-01-15",
-    method: "card",
+    method: "online",
     txnRef: "TXN001234",
     status: "success",
   },
@@ -205,9 +205,9 @@ export function getAllEnrollments(): Enrollment[] {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
   }).format(amount)
 }
 

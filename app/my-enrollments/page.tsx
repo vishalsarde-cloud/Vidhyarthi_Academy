@@ -20,6 +20,7 @@ import {
   updateEnrollment,
 } from "@/lib/data"
 import { getAllStudents } from "@/lib/auth-data"
+import { getEnrollmentsByStudentId as getAdminEnrollmentsByStudentId, getAllEnrollments, getPaymentsByEnrollmentId as getOfflinePaymentsByEnrollmentId } from "@/lib/enrollment-store"
 import type { Enrollment, Installment, Payment, Student } from "@/lib/types"
 import Link from "next/link"
 import { Calendar, CreditCard, CheckCircle2, Clock, AlertCircle, Receipt, BookOpen } from "lucide-react"
@@ -36,13 +37,52 @@ export default function MyEnrollmentsPage() {
 
   useEffect(() => {
     if (user) {
-      const userEnrollments = getEnrollmentsByStudentId(user.id)
-      setEnrollments(userEnrollments)
+      // Get self-registered enrollments from data.ts
+      const selfRegisteredEnrollments = getEnrollmentsByStudentId(user.id)
+      
+      // Get admin-enrolled courses from enrollment-store.ts using email matching
+      const allAdminEnrollments = getAllEnrollments()
+      const adminEnrollmentsByEmail = allAdminEnrollments.filter(e => e.studentEmail === user.email)
+      
+      // Convert admin enrollments to Enrollment format
+      const convertedAdminEnrollments: Enrollment[] = adminEnrollmentsByEmail.map((adminEnrollment: any) => {
+        const course = courses.find(c => c.id === adminEnrollment.courseId)
+        return {
+          id: adminEnrollment.id,
+          studentId: adminEnrollment.studentId,
+          courseId: adminEnrollment.courseId,
+          enrollmentDate: adminEnrollment.enrollmentDate,
+          status: adminEnrollment.status,
+          schedule: adminEnrollment.schedule || [],
+          totalAmount: adminEnrollment.courseFees,
+          selectedInstallments: adminEnrollment.selectedInstallments || 1,
+          createdAt: adminEnrollment.createdAt || new Date().toISOString(),
+        }
+      })
+      
+      // Combine both types of enrollments
+      const allUserEnrollments = [...selfRegisteredEnrollments, ...convertedAdminEnrollments]
+      setEnrollments(allUserEnrollments)
 
-      // Get all payments for user's enrollments
+      // Get all payments for user's enrollments (both online and offline)
       const userPayments: Payment[] = []
-      userEnrollments.forEach((enrollment) => {
+      allUserEnrollments.forEach((enrollment) => {
+        // Get online payments from data.ts
         userPayments.push(...getPaymentsByEnrollmentId(enrollment.id))
+        
+        // Get offline payments from enrollment-store.ts
+        const offlinePayments = getOfflinePaymentsByEnrollmentId(enrollment.id)
+        // Convert offline payments to Payment format
+        userPayments.push(...offlinePayments.map((p: any) => ({
+          id: p.id,
+          enrollmentId: p.enrollmentId,
+          installmentNo: p.installmentNo,
+          amount: p.amount,
+          paidAt: p.paymentDate,
+          method: p.paymentMethod || "offline",
+          txnRef: p.receiptId,
+          status: p.status === "completed" ? "success" : p.status,
+        })))
       })
       setPayments(userPayments)
     }
@@ -50,7 +90,7 @@ export default function MyEnrollmentsPage() {
 
   const getStudentData = (): Student => {
     const students = getAllStudents()
-    const student = students.find((s) => s.email === user?.email)
+    const student = students.find((s: Student) => s.email === user?.email)
     return (
       student || {
         id: user?.id || "",
@@ -74,6 +114,18 @@ export default function MyEnrollmentsPage() {
     const { enrollment, installment } = selectedInstallment
     const course = courses.find((c) => c.id === enrollment.courseId)
 
+    // Get payment method from session storage
+    let paymentMethod = "online"
+    try {
+      const stored = sessionStorage.getItem("lastPaymentMethod")
+      if (stored) {
+        paymentMethod = stored
+        sessionStorage.removeItem("lastPaymentMethod")
+      }
+    } catch (e) {
+      console.error("Failed to retrieve payment method:", e)
+    }
+
     // Create new payment record
     const newPayment: Payment = {
       id: paymentId,
@@ -81,7 +133,7 @@ export default function MyEnrollmentsPage() {
       installmentNo: installment.no,
       amount: installment.amount - installment.paidAmount,
       paidAt: new Date().toISOString(),
-      method: "card",
+      method: paymentMethod,
       txnRef: paymentId,
       status: "success",
     }

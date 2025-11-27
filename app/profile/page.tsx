@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/lib/auth-context"
 import { courses, formatCurrency, formatDate, getEnrollmentsByStudentId } from "@/lib/data"
+import { getAllEnrollments } from "@/lib/enrollment-store"
 import {
   User,
   Mail,
@@ -47,7 +48,34 @@ export default function ProfilePage() {
     github: user?.github || "",
   })
 
-  const enrollments = user ? getEnrollmentsByStudentId(user.id) : []
+  const getEnrollments = () => {
+    if (!user) return []
+    
+    // Get self-registered enrollments from data.ts
+    const selfRegisteredEnrollments = getEnrollmentsByStudentId(user.id)
+    
+    // Get admin-enrolled courses from enrollment-store.ts using email matching
+    const allAdminEnrollments = getAllEnrollments()
+    const adminEnrollmentsByEmail = allAdminEnrollments.filter(e => e.studentEmail === user.email)
+    
+    // Convert admin enrollments to Enrollment format
+    const convertedAdminEnrollments = adminEnrollmentsByEmail.map((adminEnrollment: any) => ({
+      id: adminEnrollment.id,
+      studentId: adminEnrollment.studentId,
+      courseId: adminEnrollment.courseId,
+      enrollmentDate: adminEnrollment.enrollmentDate,
+      status: adminEnrollment.status,
+      schedule: adminEnrollment.schedule || [],
+      totalAmount: adminEnrollment.courseFees,
+      selectedInstallments: adminEnrollment.selectedInstallments || 1,
+      createdAt: adminEnrollment.createdAt || new Date().toISOString(),
+    }))
+    
+    // Combine both types of enrollments
+    return [...selfRegisteredEnrollments, ...convertedAdminEnrollments]
+  }
+
+  const enrollments = getEnrollments()
   const enrichedEnrollments = enrollments.map((e) => ({
     ...e,
     course: courses.find((c) => c.id === e.courseId),
